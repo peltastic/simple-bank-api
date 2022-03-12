@@ -17,10 +17,13 @@ sqlc:
 	sqlc generate
 
 sqlcdocker: 
-	 docker run --rm -v $(pwd):/src -w /src kjconroy/sqlc generate	
+	 docker run --rm -v ${pwd}:/src -w /src kjconroy/sqlc generate	
 
 test: 
 	go test -v -cover ./...
+	
+server:
+	go run main.go	
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc sqlcdocker
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc sqlcdocker server
 	

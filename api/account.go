@@ -10,7 +10,7 @@ import (
 
 type createAccountRequest struct {
 	Owner    string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=USD EUR"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 
 func (server *Server) createAccount(ctx *gin.Context) {
@@ -96,11 +96,14 @@ func (server *Server) deleteAccount(ctx *gin.Context) {
 	}
 	err := server.store.DeleteAccount(ctx, req.ID)
 	if err != nil {
-
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	ctx.JSON(http.StatusOK, "Account deleted")
+	ctx.JSON(http.StatusOK, "account deleted")
 }
 
 type updateAccountRequest struct {
@@ -111,24 +114,27 @@ type updateAccountID struct {
 	ID int64 `uri:"id"`
 }
 
-func (server *Server) updateAccount (ctx *gin.Context) {
+func (server *Server) updateAccount(ctx *gin.Context) {
 	var req updateAccountRequest
 	var id updateAccountID
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
 	if err := ctx.ShouldBindUri(&id); err != nil {
-		ctx.JSON(http.StatusBadRequest,errorResponse(err))
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 	}
 	arg := db.UpdateAccountParams{
-		ID: id.ID,
+		ID:      id.ID,
 		Balance: req.Balance,
 	}
 	account, err := server.store.UpdateAccount(ctx, arg)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 	}
 
 	ctx.JSON(http.StatusOK, account)
 }
-
